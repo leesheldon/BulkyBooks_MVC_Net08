@@ -1,0 +1,29 @@
+﻿<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+
+@if (TempData["success"] != null)
+{
+    <script type="text/javascript">
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "inline toast-bottom-right",
+            "showDuration": "300"
+        };
+        
+        toastr.success('@TempData["success"]').css("width", "360px");
+    </script>
+}
+
+@if (TempData["error"] != null)
+{
+    <script type="text/javascript">
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-bottom-right",
+            "showDuration": "300"
+        };
+        toastr.error('@TempData["error"]').css("width", "360px");
+    </script>
+}
