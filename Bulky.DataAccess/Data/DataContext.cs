@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bulky.DataAccess.Data;
 
-public class DataContext(DbContextOptions options) : IdentityDbContext<IdentityUser>(options)
+public class DataContext(DbContextOptions options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
