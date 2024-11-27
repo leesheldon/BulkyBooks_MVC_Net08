@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace BulkyWeb.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Roles = StaticDetails.Role_Admin)]
+// [Authorize(Roles = StaticDetails.Role_Admin)]
 public class ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment) : Controller
 {
     public IActionResult Index()

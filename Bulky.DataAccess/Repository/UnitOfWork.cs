@@ -8,6 +8,7 @@ public class UnitOfWork(DataContext context) : IUnitOfWork
 {
     public ICategoryRepository CategoryRepository { get; private set; } = new CategoryRepository(context);
     public IProductRepository ProductRepository { get; private set; } = new ProductRepository(context);
+    public ICompanyRepository CompanyRepository { get; private set; } = new CompanyRepository(context);
 
     public void Save()
     {
