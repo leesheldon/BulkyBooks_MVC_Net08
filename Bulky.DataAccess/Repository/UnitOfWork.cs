@@ -11,6 +11,8 @@ public class UnitOfWork(DataContext context) : IUnitOfWork
     public ICompanyRepository CompanyRepository { get; private set; } = new CompanyRepository(context);
     public IShoppingCartRepository ShoppingCartRepository { get; private set; } = new ShoppingCartRepository(context);
     public IApplicationUserRepository ApplicationUserRepository { get; private set; } = new ApplicationUserRepository(context);
+    public IOrderHeaderRepository OrderHeaderRepository { get; private set; } = new OrderHeaderRepository(context);
+    public IOrderDetailRepository OrderDetailRepository { get; private set; } = new OrderDetailRepository(context);
 
     public void Save()
     {
