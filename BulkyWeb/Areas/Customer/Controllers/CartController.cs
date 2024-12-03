@@ -160,7 +160,7 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
             x => x.Id == id, includeProperties: "ApplicationUser");
 
         if (orderHeader.PaymentStatus != StaticDetails.Payment_Status_Delayed_Payment) {
-            // This is ann order by a regular customer
+            // This is an order made by a regular customer
             var service = new SessionService();
             Session session = service.Get(orderHeader.SessionId);
 
