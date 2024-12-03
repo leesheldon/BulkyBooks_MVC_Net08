@@ -22,4 +22,7 @@ public static class StaticDetails
     public const string Payment_Status_Delayed_Payment = "ApprovedForDelayedPayment";
     public const string Payment_Status_Rejected = "Rejected";
 
+    // Session
+    public const string SessionCart = "SessionShoppingCart";
+
 }

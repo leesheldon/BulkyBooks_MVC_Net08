@@ -4,6 +4,7 @@ using Bulky.Models;
 using Bulky.DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using Bulky.Utility;
 
 namespace BulkyWeb.Areas.Customer.Controllers;
 
@@ -21,6 +22,8 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
+        
+        
         IEnumerable<Product> productList = _unitOfWork.ProductRepository.GetAll(includeProperties: "Category");
         return View(productList);
     }
@@ -51,13 +54,20 @@ public class HomeController : Controller
             // This cart existed
             cartFromDb.Count += cart.Count;
             _unitOfWork.ShoppingCartRepository.Update(cartFromDb);
+            _unitOfWork.Save();
         }
         else {
             // Add cart record
             _unitOfWork.ShoppingCartRepository.Add(cart);
+            _unitOfWork.Save();
+
+            // Set cart session value
+            IEnumerable<ShoppingCart> cartsByUser = _unitOfWork.ShoppingCartRepository.GetAll(
+                x => x.ApplicationUserId == userId);
+
+            HttpContext.Session.SetInt32(StaticDetails.SessionCart, cartsByUser.Count());
         }
         
-        _unitOfWork.Save();
         TempData["success"] = "Cart updated successfully.";
 
         return RedirectToAction(nameof(Index));

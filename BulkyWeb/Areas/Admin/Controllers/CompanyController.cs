@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BulkyWeb.Areas.Admin.Controllers;
 
 [Area("Admin")]
-// [Authorize(Roles = StaticDetails.Role_Admin)]
+[Authorize(Roles = StaticDetails.Role_Admin)]
 public class CompanyController(IUnitOfWork unitOfWork) : Controller
 {
     public IActionResult Index()

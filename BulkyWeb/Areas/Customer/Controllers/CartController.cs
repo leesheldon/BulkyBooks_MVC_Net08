@@ -169,6 +169,8 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
                 unitOfWork.OrderHeaderRepository.UpdateStatus(id, StaticDetails.Status_Approved, StaticDetails.Payment_Status_Approved);
                 unitOfWork.Save();
             }
+
+            HttpContext.Session.Clear();
         }
 
         List<ShoppingCart> cartList = unitOfWork.ShoppingCartRepository.GetAll(
@@ -192,8 +194,14 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
 
     public IActionResult Minus(int cartId)
     {
-        var cartFromDb = unitOfWork.ShoppingCartRepository.Get(x => x.Id == cartId);
+        var cartFromDb = unitOfWork.ShoppingCartRepository.Get(x => x.Id == cartId, tracked: true);
         if (cartFromDb.Count <= 1) {
+            // Update cart session value
+            IEnumerable<ShoppingCart> cartsByUser = unitOfWork.ShoppingCartRepository.GetAll(
+                x => x.ApplicationUserId == cartFromDb.ApplicationUserId);
+
+            HttpContext.Session.SetInt32(StaticDetails.SessionCart, cartsByUser.Count() - 1);
+            
             // Remove this item from cart
             unitOfWork.ShoppingCartRepository.Remove(cartFromDb);
         }
@@ -208,7 +216,15 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
 
     public IActionResult Remove(int cartId)
     {
-        var cartFromDb = unitOfWork.ShoppingCartRepository.Get(x => x.Id == cartId);
+        var cartFromDb = unitOfWork.ShoppingCartRepository.Get(x => x.Id == cartId, tracked: true);
+        
+        // Update cart session value
+        IEnumerable<ShoppingCart> cartsByUser = unitOfWork.ShoppingCartRepository.GetAll(
+            x => x.ApplicationUserId == cartFromDb.ApplicationUserId);
+
+        HttpContext.Session.SetInt32(StaticDetails.SessionCart, cartsByUser.Count() - 1);
+
+        // Remove this item from cart
         unitOfWork.ShoppingCartRepository.Remove(cartFromDb);
         unitOfWork.Save();
 
