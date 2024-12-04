@@ -129,15 +129,6 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
 
         public async Task OnGetAsync(string returnUrl = null)
         {
-            // Add roles if they are not existed.
-            if (!await _roleManager.RoleExistsAsync(StaticDetails.Role_Customer))
-            {
-                await _roleManager.CreateAsync(new IdentityRole(StaticDetails.Role_Customer));
-                await _roleManager.CreateAsync(new IdentityRole(StaticDetails.Role_Admin));
-                await _roleManager.CreateAsync(new IdentityRole(StaticDetails.Role_Employee));
-                await _roleManager.CreateAsync(new IdentityRole(StaticDetails.Role_Company));
-            }
-
             // Populate roles list to Register form
             Input = new() {
                 RoleList = _roleManager.Roles.Select(x => x.Name).Select(y => new SelectListItem {

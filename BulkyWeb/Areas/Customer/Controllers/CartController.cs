@@ -116,7 +116,7 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
         if (appUser.CompanyId.GetValueOrDefault() == 0) {
             // It is a regular customer account and we need to capture payment
             // Stripe logic
-            var domain = "https://localhost:7292/";
+            var domain = Request.Scheme + "://" + Request.Host.Value + "/";
             var options = new SessionCreateOptions {
                 SuccessUrl = domain + $"customer/cart/OrderConfirmation?id={cartVM.OrderHeader.Id}",
                 CancelUrl = domain + "customer/cart/index",
