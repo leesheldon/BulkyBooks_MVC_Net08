@@ -13,7 +13,8 @@ namespace BulkyWeb.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Authorize(Roles = StaticDetails.Role_Admin)]
-public class UserController(DataContext context, UserManager<ApplicationUser> userManager) : Controller
+public class UserController(IUnitOfWork unitOfWork, 
+    UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) : Controller
 {
     public IActionResult Index()
     {
@@ -22,14 +23,7 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
 
     public IActionResult RoleManagement(string userId)
     {
-        var userRole = context.UserRoles.FirstOrDefault(x => x.UserId == userId);
-        if (userRole == null) {
-            TempData["error"] = "User-Role record not found.";
-            return RedirectToAction("Index");
-        }
-
-        string roleId = userRole.RoleId;
-        var appUser = context.ApplicationUsers.Include(x => x.Company).FirstOrDefault(y => y.Id == userId);
+        var appUser = unitOfWork.ApplicationUserRepository.Get(x => x.Id == userId, includeProperties: "Company");
         if (appUser == null) {
             TempData["error"] = "User not found.";
             return RedirectToAction("Index");
@@ -37,23 +31,24 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
 
         RoleManagementVM roleVM = new RoleManagementVM() {
             ApplicationUser = appUser,
-            RoleList = context.Roles.Select(r => new SelectListItem {
+            RoleList = roleManager.Roles.Select(r => new SelectListItem {
                 Text = r.Name,
                 Value = r.Name
             }),
-            CompanyList = context.Companies.Select(c => new SelectListItem {
+            CompanyList = unitOfWork.CompanyRepository.GetAll().Select(c => new SelectListItem {
                 Text = c.Name,
                 Value = c.Id.ToString()
             })
         };
 
-        var role = context.Roles.FirstOrDefault(x => x.Id == roleId);
-        if (role == null || role.Name == null) {
-            TempData["error"] = "Role not found.";
+        var roleOfUser = userManager.GetRolesAsync(appUser).GetAwaiter().GetResult().FirstOrDefault();
+
+        if (string.IsNullOrEmpty(roleOfUser)) {
+            TempData["error"] = "Role of this user not found.";
             return RedirectToAction("Index");
         }
         else {
-            roleVM.ApplicationUser.Role = role.Name;
+            roleVM.ApplicationUser.Role = roleOfUser;
         }
 
         return View(roleVM);
@@ -62,42 +57,40 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
     [HttpPost]
     public async Task<IActionResult> RoleManagement(RoleManagementVM roleVM)
     {
-        var role = context.UserRoles.FirstOrDefault(x => x.UserId == roleVM.ApplicationUser.Id);
-        if (role == null) {
-            TempData["error"] = "User-Role record of this user not found.";
+        var userFromDb = unitOfWork.ApplicationUserRepository.Get(x => x.Id == roleVM.ApplicationUser.Id);
+        if (userFromDb == null) {
+            TempData["error"] = "This user record in Database not found.";
             return RedirectToAction("Index");
         }
 
-        string roleId = role.RoleId;
-
-        var oldRole = context.Roles.FirstOrDefault(x => x.Id == roleId);
-        if (oldRole == null || oldRole.Name == null) {
+        var oldRole = userManager.GetRolesAsync(userFromDb).GetAwaiter().GetResult().FirstOrDefault();
+        if (string.IsNullOrEmpty(oldRole)) {
             TempData["error"] = "The old role of this user not found.";
             return RedirectToAction("Index");
         }
 
-        string oldRoleName = oldRole.Name;
-
-        if (!(roleVM.ApplicationUser.Role == oldRoleName)) {
+        if (roleVM.ApplicationUser.Role != oldRole) {
             // This user's role was updated.
-            var userFromDb = context.ApplicationUsers.FirstOrDefault(x => x.Id == roleVM.ApplicationUser.Id);
-            if (userFromDb == null) {
-                TempData["error"] = "This user record in Database not found.";
-                return RedirectToAction("Index");
-            }
-
             if (roleVM.ApplicationUser.Role == StaticDetails.Role_Company) {
                 userFromDb.CompanyId = roleVM.ApplicationUser.CompanyId;
             }
 
-            if (oldRoleName == StaticDetails.Role_Company) {
+            if (oldRole == StaticDetails.Role_Company) {
                 userFromDb.CompanyId = null;
             }
 
-            context.SaveChanges();
+            unitOfWork.ApplicationUserRepository.Update(userFromDb);
+            unitOfWork.Save();
             
-            await userManager.RemoveFromRoleAsync(userFromDb, oldRoleName);
+            await userManager.RemoveFromRoleAsync(userFromDb, oldRole);
             await userManager.AddToRoleAsync(userFromDb, roleVM.ApplicationUser.Role);
+        }
+        else {
+            if (oldRole == StaticDetails.Role_Company && userFromDb.CompanyId != roleVM.ApplicationUser.CompanyId) {
+                userFromDb.CompanyId = roleVM.ApplicationUser.CompanyId;
+                unitOfWork.ApplicationUserRepository.Update(userFromDb);
+                unitOfWork.Save();
+            }
         }
 
         return RedirectToAction("Index");
@@ -108,14 +101,17 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
     [HttpGet]
     public IActionResult GetAll()
     {
-        List<ApplicationUser> userList = context.ApplicationUsers.Include(x => x.Company).ToList();
-        var userRoles = context.UserRoles.ToList();
-        var roles = context.Roles.ToList();
+        List<ApplicationUser> userList = unitOfWork.ApplicationUserRepository.GetAll(includeProperties: "Company").ToList();
 
         foreach (var user in userList)
         {
-            var roleId = userRoles.FirstOrDefault(x => x.UserId == user.Id).RoleId;
-            user.Role = roles.FirstOrDefault(x => x.Id == roleId).Name;
+            var role = userManager.GetRolesAsync(user).GetAwaiter().GetResult().FirstOrDefault();
+
+            if (string.IsNullOrEmpty(role)) {
+                return Json(new { data = new List<ApplicationUser>(), success = false, message = "Role of user (" + user.Name + ") not found." });
+            }
+
+            user.Role = role;
 
             if (user.Company == null) {
                 user.Company = new Company() { Name = "" };
@@ -128,7 +124,7 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
     [HttpPost]
     public IActionResult LockOrUnlock([FromBody]string id)
     {
-        var userFromDb = context.ApplicationUsers.FirstOrDefault(x => x.Id == id);
+        var userFromDb = unitOfWork.ApplicationUserRepository.Get(x => x.Id == id);
         if (userFromDb == null) {
             return Json(new { success = false, message = "Error while locking/Unlocking user!" });
         }
@@ -144,7 +140,8 @@ public class UserController(DataContext context, UserManager<ApplicationUser> us
             result_message = "Lock user successfully!";
         }
 
-        context.SaveChanges();
+        unitOfWork.ApplicationUserRepository.Update(userFromDb);
+        unitOfWork.Save();
 
         return Json(new { success = true, message = result_message });
     }

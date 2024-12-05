@@ -9,6 +9,7 @@ public interface IUnitOfWork
     IApplicationUserRepository ApplicationUserRepository { get; }
     IOrderDetailRepository OrderDetailRepository { get; }
     IOrderHeaderRepository OrderHeaderRepository { get; }
+    IProductImageRepository ProductImageRepository { get; }
 
     void Save();
 }

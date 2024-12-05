@@ -23,11 +23,12 @@ public class CartController(IUnitOfWork unitOfWork) : Controller
 
         cartVM = new() {
             ShoppingCartList = unitOfWork.ShoppingCartRepository.GetAll(x => 
-                x.ApplicationUserId == userId, includeProperties: "Product"),
+                                x.ApplicationUserId == userId, includeProperties: "Product"),
             OrderHeader = new()
         };
 
         foreach(var cart in cartVM.ShoppingCartList) {
+            cart.Product.ProductImages = unitOfWork.ProductImageRepository.GetAll(x => x.ProductId == cart.ProductId).ToList();
             cart.Price = GetPriceBasedOnQuantity(cart);
             cartVM.OrderHeader.OrderTotal += (cart.Price * cart.Count);
         }

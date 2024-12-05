@@ -1,4 +1,3 @@
-using System;
 using Bulky.DataAccess.Data;
 using Bulky.DataAccess.Repository.IRepository;
 
@@ -13,6 +12,7 @@ public class UnitOfWork(DataContext context) : IUnitOfWork
     public IApplicationUserRepository ApplicationUserRepository { get; private set; } = new ApplicationUserRepository(context);
     public IOrderHeaderRepository OrderHeaderRepository { get; private set; } = new OrderHeaderRepository(context);
     public IOrderDetailRepository OrderDetailRepository { get; private set; } = new OrderDetailRepository(context);
+    public IProductImageRepository ProductImageRepository { get; private set; } = new ProductImageRepository(context);
 
     public void Save()
     {
